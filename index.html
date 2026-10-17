@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ilon O'yini - Terminal Mode</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            background: #111827;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 440px;
+            border: 1px solid #1f2937;
+            position: relative;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .controls-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 1;
+            gap: 8px;
+            background: #1f2937;
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+
+        /* Custom Rang Tanlash Menu */
+        .color-picker-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+
+        .color-preview-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            background-color: #22c55e;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        .color-preview-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-dropdown {
+            position: absolute;
+            top: 35px;
+            left: 0;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 8px;
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            z-index: 50;
+        }
+
+        .color-dropdown.active {
+            display: grid;
+        }
+
+        .color-opt {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.15s;
+        }
+
+        .color-opt:hover {
+            transform: scale(1.2);
+        }
+
+        .score-board {
+            display: flex;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: #0b0f19;
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: #38bdf8;
+            border: 1px solid #374151;
+        }
+
+        .top-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            background: #1f2937;
+            color: #38bdf8;
+            border: 1px solid #374151;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .action-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .action-btn:hover {
+            background: #374151;
+            color: #ffffff;
+            border-color: #38bdf8;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        canvas {
+            background-color: #070a12;
+            border: 3px solid #1f2937;
+            border-radius: 12px;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.9);
+            max-width: 100%;
+            height: auto;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+
+        .terminal-container {
+            width: 100%;
+            background: #070a12;
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-height: 120px;
+            font-size: 11px;
+            z-index: 1;
+        }
+
+        .terminal-header {
+            background: #111827;
+            padding: 4px 8px;
+            color: #6b7280;
+            font-size: 10px;
+            border-bottom: 1px solid #1f2937;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .terminal-output {
+            padding: 6px 8px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            max-height: 70px;
+            color: #22c55e;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            background: #0b0f19;
+            padding: 4px 8px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .terminal-prompt {
+            color: #38bdf8;
+            margin-right: 6px;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #f8fafc;
+            outline: none;
+            width: 100%;
+            font-size: 11px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .mobile-controls {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        .mobile-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 240px;
+        }
+
+        .control-btn {
+            width: 65px;
+            height: 42px;
+            background: #1f2937;
+            color: #f3f4f6;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+
+        .control-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #38bdf8;
+            pointer-events: none;
+        }
+
+        .control-btn:active {
+            background: #38bdf8;
+            transform: scale(0.95);
+        }
+
+        .control-btn:active svg {
+            fill: #0b0f19;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 10, 18, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: #111827;
+            padding: 25px 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px solid #38bdf8;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 15px 30px rgba(56, 189, 248, 0.15);
+        }
+
+        .modal-content.game-over {
+            border-color: #ef4444;
+            box-shadow: 0 15px 30px rgba(239, 68, 68, 0.15);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 12px;
+            font-size: 22px;
+        }
+
+        .modal-content.game-over h2 {
+            color: #ef4444;
+        }
+
+        .modal-content.start-screen h2 {
+            color: #38bdf8;
+        }
+
+        .modal-content p {
+            font-size: 14px;
+            margin: 6px 0;
+            color: #9ca3af;
+        }
+
+        .primary-btn {
+            margin-top: 15px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #38bdf8;
+            color: #0b0f19;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .primary-btn:hover {
+            background: #0ea5e9;
+            transform: scale(1.03);
+        }
+
+        .instructions {
+            font-size: 10px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-actions">
+            <div class="controls-panel">
+                <div class="color-picker-wrapper">
+                    <label>Rang:</label>
+                    <div class="color-preview-btn" id="colorBtn" onclick="toggleColorPicker()"></div>
+                    
+                    <!-- Maxsus Dropdown Ranglar Jamlanmasi -->
+                    <div class="color-dropdown" id="colorDropdown">
+                        <div class="color-opt" style="background:#22c55e" onclick="selectSnakeColor('#22c55e')"></div>
+                        <div class="color-opt" style="background:#38bdf8" onclick="selectSnakeColor('#38bdf8')"></div>
+                        <div class="color-opt" style="background:#f59e0b" onclick="selectSnakeColor('#f59e0b')"></div>
+                        <div class="color-opt" style="background:#ec4899" onclick="selectSnakeColor('#ec4899')"></div>
+                        <div class="color-opt" style="background:#a855f7" onclick="selectSnakeColor('#a855f7')"></div>
+                        <div class="color-opt" style="background:#ef4444" onclick="selectSnakeColor('#ef4444')"></div>
+                        <div class="color-opt" style="background:#eab308" onclick="selectSnakeColor('#eab308')"></div>
+                        <div class="color-opt" style="background:#ffffff" onclick="selectSnakeColor('#ffffff')"></div>
+                    </div>
+                </div>
+
+                <div class="score-board">
+                    <div class="score-box">Ball: <span id="currentScore">0</span></div>
+                    <div class="score-box">Rekord: <span id="highScore">0</span></div>
+                </div>
+            </div>
+            <div class="top-btn-group">
+                <button class="action-btn" id="pauseBtn" onclick="togglePause()">
+                    <span id="pauseIcon">
+                        <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </span>
+                    <span id="pauseText">Pauza</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <!-- Terminal Paneli -->
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <span>game_terminal.sh</span>
+                <span>'help' yozing</span>
+            </div>
+            <div class="terminal-output" id="terminalOutput">
+                <div>> Tizim ishga tushdi. "help" yozib buyruqlarni ko'ring.</div>
+            </div>
+            <div class="terminal-input-line">
+                <span class="terminal-prompt">$</span>
+                <input type="text" id="terminalInput" class="terminal-input" placeholder="buyruq kiriting..." autocomplete="off">
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <button class="control-btn" id="btnUp">
+                <svg viewBox="0 0 24 24"><path d="M7 14l5-5 5 5H7z"/></svg>
+            </button>
+            <div class="mobile-row">
+                <button class="control-btn" id="btnLeft">
+                    <svg viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5V7z"/></svg>
+                </button>
+                <button class="control-btn" id="btnRight">
+                    <svg viewBox="0 0 24 24"><path d="M10 7l5 5-5 5V7z"/></svg>
+                </button>
+            </div>
+            <button class="control-btn" id="btnDown">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5-5 5H7z"/></svg>
+            </button>
+        </div>
+
+        <p class="instructions">Kompyuterda strelkalar / WASD, pastda esa terminal buyruqlaridan foydalaning</p>
+    </div>
+
+    <!-- Boshlash modal oynasi -->
+    <div class="modal" id="startModal">
+        <div class="modal-content start-screen">
+            <h2>Ilon O'yini 🐍</h2>
+            <p>Ovqatlarni yeb ilonni o'stiring va eng yuqori natijani o'rnating!</p>
+            <button class="primary-btn" onclick="initGame()">O'yinni boshlash</button>
+        </div>
+    </div>
+
+    <!-- Pauza modal oynasi -->
+    <div class="modal" id="pauseModal" style="display: none;">
+        <div class="modal-content start-screen">
+            <h2>O'yin To'xtatildi ⏸️</h2>
+            <p>Dam olish uchun pauza qilindi.</p>
+            <button class="primary-btn" onclick="togglePause()">Davom etish</button>
+        </div>
+    </div>
+
+    <!-- O'yin tugaganda ko'rinadigan modal oyna -->
+    <div class="modal" id="gameOverModal" style="display: none;">
+        <div class="modal-content game-over">
+            <h2>O'yin Tugadi! 😵</h2>
+            <p>To'plangan ball: <b id="finalScore" style="color: #38bdf8;">0</b></p>
+            <p>Eng yuqori rekord: <b id="modalHighScore" style="color: #22c55e;">0</b></p>
+            <button class="primary-btn" onclick="initGame()">Qayta boshlash</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const currentScoreEl = document.getElementById('currentScore');
+        const highScoreEl = document.getElementById('highScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        const modalHighScoreEl = document.getElementById('modalHighScore');
+        const startModal = document.getElementById('startModal');
+        const pauseModal = document.getElementById('pauseModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const pauseText = document.getElementById('pauseText');
+        const colorBtn = document.getElementById('colorBtn');
+        const colorDropdown = document.getElementById('colorDropdown');
+        
+        const terminalOutput = document.getElementById('terminalOutput');
+        const terminalInput = document.getElementById('terminalInput');
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [];
+        let food = { x: 0, y: 0 };
+        let dx = gridSize;
+        let dy = 0;
+        let nextDx = gridSize;
+        let nextDy = 0;
+        let score = 0;
+        let selectedColor = '#22c55e';
+
+        // Rekordni o'qish (agarda eskilari 10 million kabi sun'iy katta bo'lsa, xohlasangiz reset bo'ladi)
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        highScoreEl.innerText = highScore;
+
+        function toggleColorPicker() {
+            colorDropdown.classList.toggle('active');
+        }
+
+        function selectSnakeColor(color) {
+            selectedColor = color;
+            colorBtn.style.backgroundColor = color;
+            colorDropdown.classList.remove('active');
+            logToTerminal(`Ilon rangi o'zgartirildi: ${color}`);
+        }
+
+        // Tinch holatda bosilganda menuni yopish
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.color-picker-wrapper')) {
+                colorDropdown.classList.remove('active');
+            }
+        });
+
+        function logToTerminal(text, isError = false) {
+            const div = document.createElement('div');
+            div.style.color = isError ? '#ef4444' : '#22c55e';
+            div.innerText = `> ${text}`;
+            terminalOutput.appendChild(div);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = terminalInput.value.trim().toLowerCase();
+                terminalInput.value = '';
+                if (!cmd) return;
+
+                logToTerminal(cmd);
+                handleCommand(cmd);
+            }
+        });
+
+        function handleCommand(cmd) {
+            const parts = cmd.split(' ');
+            const action = parts[0];
+            const arg = parts[1];
+
+            switch(action) {
+                case 'help':
+                    logToTerminal('Buyruqlar: score, restart, pause, clear, color [hex], cheat, resetrekord');
+                    break;
+                case 'score':
+                    logToTerminal(`Joriy ball: ${score} | Rekord: ${highScore}`);
+                    break;
+                case 'restart':
+                    initGame();
+                    logToTerminal('O\'yin qaytadan boshlandi.');
+                    break;
+                case 'pause':
+                    togglePause();
+                    logToTerminal(isPaused ? 'O\'yin pauza qilindi.' : 'O\'yin davom etmoqda.');
+                    break;
+                case 'clear':
+                    terminalOutput.innerHTML = '';
+                    break;
+                case 'resetrekord':
+                    localStorage.removeItem('snakeHighScore');
+                    highScore = 0;
+                    highScoreEl.innerText = 0;
+                    logToTerminal('Rekord tozalandi (0 deb belgilandi).');
+                    break;
+                case 'color':
+                    if (arg) {
+                        selectSnakeColor(arg);
+                    } else {
+                        logToTerminal('Xato: Rang kiritilmadi (masalan: color #ff0000)', true);
+                    }
+                    break;
+                case 'cheat':
+                    const lastCheatTime = localStorage.getItem('snakeLastCheatTime');
+                    const currentTime = Date.now();
+                    const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+
+                    if (lastCheatTime && (currentTime - lastCheatTime < twoDaysInMs)) {
+                        const remainingMs = twoDaysInMs - (currentTime - lastCheatTime);
+                        const hoursLeft = Math.floor(remainingMs / (1000 * 60 * 60));
+                        const minutesLeft = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                        logToTerminal(`Cheat kodi 2 kunda 1 marta ishlaydi! Qolgan vaqt: ${hoursLeft} soat ${minutesLeft} daqiqa`, true);
+                    } else {
+                        score += 20;
+                        currentScoreEl.innerText = score;
+                        if (score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('snakeHighScore', highScore);
+                            highScoreEl.innerText = highScore;
+                        }
+                        localStorage.setItem('snakeLastCheatTime', currentTime);
+                        logToTerminal('CHEAT QO\'LLANILDI! +20 ball qo\'shildi! 💎');
+                    }
+                    break;
+                default:
+                    logToTerminal(`Noma'lum buyruq: "${action}". "help" yozib ko'ring.`, true);
+            }
+        }
+
+        let isGameOver = false;
+        let isPaused = false;
+        let gameInterval = null;
+
+        function initGame() {
+            startModal.style.display = 'none';
+            pauseModal.style.display = 'none';
+            gameOverModal.style.display = 'none';
+            isPaused = false;
+            updatePauseUI();
+            startGame();
+        }
+
+        function startGame() {
+            snake = [
+                { x: 160, y: 200 },
+                { x: 140, y: 200 },
+                { x: 120, y: 200 }
+            ];
+            dx = gridSize;
+            dy = 0;
+            nextDx = gridSize;
+            nextDy = 0;
+            score = 0;
+            isGameOver = false;
+            currentScoreEl.innerText = score;
+            generateFood();
+            
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 120);
+        }
+
+        function togglePause() {
+            if (isGameOver || startModal.style.display === 'flex') return;
+
+            isPaused = !isPaused;
+            updatePauseUI();
+
+            if (isPaused) {
+                clearInterval(gameInterval);
+                pauseModal.style.display = 'flex';
+            } else {
+                pauseModal.style.display = 'none';
+                gameInterval = setInterval(gameLoop, 120);
+            }
+        }
+
+        function updatePauseUI() {
+            if (isPaused) {
+                pauseIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+                pauseText.innerText = 'Davom';
+            } else {
+                pauseIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                pauseText.innerText = 'Pauza';
+            }
+        }
+
+        function gameLoop() {
+            if (isGameOver || isPaused) return;
+
+            dx = nextDx;
+            dy = nextDy;
+
+            clearCanvas();
+            moveSnake();
+            checkCollision();
+
+            if (!isGameOver) {
+                drawFood();
+                drawSnake();
+            } else {
+                drawSnake();
+            }
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#070a12';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function moveSnake() {
+            let head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            if (head.x < 0) head.x = canvas.width - gridSize;
+            else if (head.x >= canvas.width) head.x = 0;
+
+            if (head.y < 0) head.y = canvas.height - gridSize;
+            else if (head.y >= canvas.height) head.y = 0;
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                currentScoreEl.innerText = score;
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snakeHighScore', highScore);
+                    highScoreEl.innerText = highScore;
+                }
+                generateFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    handleGameOver();
+                    break;
+                }
+            }
+        }
+
+        function handleGameOver() {
+            isGameOver = true;
+            clearInterval(gameInterval);
+
+            finalScoreEl.innerText = score;
+            modalHighScoreEl.innerText = highScore;
+
+            clearCanvas();
+            drawFood();
+            drawSnake();
+
+            setTimeout(() => {
+                gameOverModal.style.display = 'flex';
+            }, 600);
+        }
+
+        function generateFood() {
+            food.x = Math.floor(Math.random() * tileCount) * gridSize;
+            food.y = Math.floor(Math.random() * tileCount) * gridSize;
+
+            snake.forEach(segment => {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood();
+                }   
+            });
+        }
+
+        function drawFood() {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(
+                food.x + gridSize / 2,
+                food.y + gridSize / 2,
+                gridSize / 2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+            ctx.fillStyle = '#fca5a5';
+            ctx.beginPath();
+            ctx.arc(
+                food.x + gridSize / 3,
+                food.y + gridSize / 3,
+                gridSize / 6,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        function drawSnake() {
+            const bodyColor = isGameOver ? '#4b5563' : selectedColor;
+
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = bodyColor;
+                
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(segment.x + 1, segment.y + 1, gridSize - 2, gridSize - 2, index === 0 ? 8 : 4);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(segment.x + 1, segment.y + 1, gridSize - 2, gridSize - 2);
+                }
+
+                if (index === 0) {
+                    drawEyes(segment.x, segment.y);
+                }
+            });
+        }
+
+        function drawEyes(headX, headY) {
+            ctx.lineWidth = 2;
+            let eye1 = { x: 0, y: 0 };
+            let eye2 = { x: 0, y: 0 };
+
+            if (dx === gridSize) {
+                eye1 = { x: headX + 14, y: headY + 5 };
+                eye2 = { x: headX + 14, y: headY + 15 };
+            } else if (dx === -gridSize) {
+                eye1 = { x: headX + 6, y: headY + 5 };
+                eye2 = { x: headX + 6, y: headY + 15 };
+            } else if (dy === -gridSize) {
+                eye1 = { x: headX + 5, y: headY + 6 };
+                eye2 = { x: headX + 15, y: headY + 6 };
+            } else if (dy === gridSize) {
+                eye1 = { x: headX + 5, y: headY + 14 };
+                eye2 = { x: headX + 15, y: headY + 14 };
+            }
+
+            if (isGameOver) {
+                ctx.strokeStyle = '#ffffff';
+                drawX(eye1.x, eye1.y, 3);
+                drawX(eye2.x, eye2.y, 3);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(eye1.x, eye1.y, 3, 0, Math.PI * 2);
+                ctx.arc(eye2.x, eye2.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(eye1.x, eye1.y, 1.5, 0, Math.PI * 2);
+                ctx.arc(eye2.x, eye2.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawX(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x - size, y - size);
+            ctx.lineTo(x + size, y + size);
+            ctx.moveTo(x + size, y - size);
+            ctx.lineTo(x - size, y + size);
+            ctx.stroke();
+        }
+
+        function changeDirection(newDx, newDy) {
+            if (isPaused || isGameOver) return;
+
+            const goingUp = nextDy === -gridSize;
+            const goingDown = nextDy === gridSize;
+            const goingRight = nextDx === gridSize;
+            const goingLeft = nextDx === -gridSize;
+
+            if (newDx === -gridSize && !goingRight) { nextDx = -gridSize; nextDy = 0; }
+            if (newDy === -gridSize && !goingDown) { nextDx = 0; nextDy = -gridSize; }
+            if (newDx === gridSize && !goingLeft) { nextDx = gridSize; nextDy = 0; }
+            if (newDy === gridSize && !goingUp) { nextDx = 0; nextDy = gridSize; }
+        }
+
+        window.addEventListener('keydown', e => {
+            if (document.activeElement === terminalInput) return;
+
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+                togglePause();
+                return;
+            }
+
+            const keyPressed = e.key.toLowerCase();
+            if (keyPressed === 'arrowleft' || keyPressed === 'a') changeDirection(-gridSize, 0);
+            if (keyPressed === 'arrowup' || keyPressed === 'w') changeDirection(0, -gridSize);
+            if (keyPressed === 'arrowright' || keyPressed === 'd') changeDirection(gridSize, 0);
+            if (keyPressed === 'arrowdown' || keyPressed === 's') changeDirection(0, gridSize);
+        });
+
+        const handleBtnTouch = (e, targetDx, targetDy) => {
+            e.preventDefault();
+            changeDirection(targetDx, targetDy);
+        };
+
+        document.getElementById('btnLeft').addEventListener('pointerdown', (e) => handleBtnTouch(e, -gridSize, 0));
+        document.getElementById('btnUp').addEventListener('pointerdown', (e) => handleBtnTouch(e, 0, -gridSize));
+        document.getElementById('btnRight').addEventListener('pointerdown', (e) => handleBtnTouch(e, gridSize, 0));
+        document.getElementById('btnDown').addEventListener('pointerdown', (e) => handleBtnTouch(e, 0, gridSize));
+    </script>
+</body>
+</html>
